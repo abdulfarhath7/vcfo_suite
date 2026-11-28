@@ -2,9 +2,13 @@ import { getActiveCatalogItems, getIncorporationPhases } from '@/data/checklist'
 import type { FillMode, FillScope } from './types';
 
 /**
- * Whether a chat message asks to put a card's values into the app: "fill this into the app",
- * "upload the data into vcfo suite tool", "save it in SPICe", "fill it". Pure, so the pipeline and
- * the tests read one answer. A question about filling ("how do I fill step 3?") is not a request.
+ * Whether a chat message asks to fill the app: "fill this into the app", "upload the data into vcfo
+ * suite tool", "save it in SPICe", "fill it", and (since the fill-everything build) any message that
+ * starts by asking to fill, with or without a place, a field, a source or a client: "fill
+ * business description from br", "fill bonterra", "fill everything", "fill data". Every such request
+ * starts the whole fill; an optional scope ("fill phase 2") still narrows it. Pure, so the pipeline
+ * and the tests read one answer. A question about filling ("how do I fill step 3?") is not a request,
+ * and neither is a sentence that only mentions filling ("the client will fill it tomorrow").
  */
 
 const VERB = /\b(fill|fil|upload|put|save|enter|push|load|apply|write)\b/;
@@ -12,7 +16,12 @@ const PLACE = /\b(in|into|onto|on|to)\s+(the\s+|our\s+)?(app|application|tool|sy
 /** How a short request may say the mode: "fill it automatically", "fill it in manually". */
 const HOW = '(\\s+(auto|automatically|manually|manual|live|for\\s+me|step\\s+by\\s+step|in\\s+(the\\s+)?background|by\\s+itself))?';
 const SHORT = new RegExp(`^(please\\s+)?(fill|fill\\s+(it|this|them|these|that)(\\s+(in|up|out))?|fill\\s+in|go\\s+ahead\\s+and\\s+fill(\\s+it)?)${HOW}(\\s+(now|please))?[.!]*$`);
-const QUESTION = /^(how|what|why|when|where|which|can\s+i|should\s+i|do\s+i)\b/;
+const QUESTION = /^(how|what|why|when|where|which|who|is|are|does|did|can\s+i|should\s+i|do\s+i)\b/;
+/**
+ * A request that opens with the fill verb itself, after polite or filler words: "fill bonterra",
+ * "please fill everything", "can you fill the business description from the br", "auto fill data".
+ */
+const LEADING_FILL = /^((please|pls|plz|kindly|ok|okay|now|just|also|then|and|go\s+ahead\s+and|can\s+you|could\s+you|would\s+you|will\s+you)[\s,]+)*(auto[\s-]?)?(fill|fil|populate|prefill|pre-fill)\b/;
 
 const normal = (text: string) => text.toLowerCase().replace(/\s+/g, ' ').trim();
 
@@ -21,6 +30,7 @@ export function isFillRequest(text: string): boolean {
   if (!t || t.length > 240) return false;
   if (SHORT.test(t)) return true;
   if (QUESTION.test(t)) return false;
+  if (LEADING_FILL.test(t)) return true;
   return VERB.test(t) && PLACE.test(t);
 }
 
@@ -90,4 +100,19 @@ export function scopeFromText(text: string): FillScope | null {
   }
   if (inPhases.length === 0) return null;
   return { stepIds: items.map((i) => i.id), label: inPhases.map((p) => p.title).join(' and ') };
+}
+
+/** How long a card in the chat counts as the read a fill request means; older cards are read again. */
+export const FRESH_CARD_MS = 30 * 60 * 1000;
+
+/**
+ * Whether a fill request should fill the open card in the chat as it is, or read every source again
+ * first. The card is used when it is recent and for the client the message names (or no client is
+ * named). Otherwise the client's folder and documents are read again: a reread reuses every stored
+ * read of an unchanged file, so it costs little, and the new card holds everything known.
+ */
+export function cardIsFresh(card: { createdAt: Date; engagementId: string | null }, input: { now: Date; namedEngagementIds: readonly string[] }): boolean {
+  if (input.now.getTime() - card.createdAt.getTime() > FRESH_CARD_MS) return false;
+  if (input.namedEngagementIds.length === 0) return true;
+  return Boolean(card.engagementId && input.namedEngagementIds.includes(card.engagementId));
 }

@@ -14,6 +14,7 @@ import { HexgridLoader } from '@/components/common/HexgridLoader';
 import type { ChecklistItem } from '@/data/checklist';
 import { adminProjectPath, adminProjectStepPath } from '@/lib/projects/project-step-path';
 import { gateActiveCatalog } from '@/lib/checklist/checklist-step-gate';
+import { shownStepGates } from '@/lib/incorporation/shown-step-gates';
 import { formatDate } from '@/lib/projects/deadlines';
 import { resolveEngagementFromRouteParam } from '@/lib/slug';
 import { useStaffBasePath } from '@/hooks/use-staff-base-path';
@@ -69,7 +70,8 @@ export default function ProjectDetail() {
     [eng, getStateForEngagement],
   );
   // Client viewer on purpose: read-only gating, identical to the client portal.
-  const gates = useMemo(() => gateActiveCatalog(state, 'client'), [state]);
+  // The marks and counts follow each step's own Done, as the step page's head does.
+  const gates = useMemo(() => shownStepGates(gateActiveCatalog(state, 'client'), state), [state]);
 
   // `engagementsLoading` is false while the session hydrates (the query is still idle), so a
   // fresh page load would bounce; wait until the engagements query has settled.

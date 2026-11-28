@@ -33,6 +33,55 @@ describe('classifyFile: the client', () => {
   });
 });
 
+describe('classifyFile: a document fills an upload slot and gives its values', () => {
+  const v = (label: string, value: string, targetKey: string, person: string | null = null) => ({ label, value, page: 1, person, confidence: 0.95, quote: value, targetKey });
+  // A foreign parent's signed board resolution, as the Bonterra folder holds it (synthetic values).
+  const resolution = [
+    v('Business description', 'The company will develop and license software for logistics firms in India.', 'company.business_description'),
+    v('Proposed company name 1', 'Northwind India Private Limited', 'company.proposed_name_1'),
+    v('Proposed company name 2', 'Northwind Software India Private Limited', 'company.proposed_name_2'),
+    v('Director name', 'Asha Rao', 'director.name', 'Asha Rao'),
+    v('Authorised share capital', '1000000', 'capital.authorised'),
+    v('Signatory first name', 'Jordan', 'signatory.first_name'),
+    v('Signatory designation', 'Director', 'signatory.designation'),
+    v('Board resolution date', '2026-10-01', 'signatory.resolution_date'),
+  ];
+
+  it('returns the signed-resolution slot and every value written inside a signed board resolution', () => {
+    const found = classifyFile(file('br', 'Acme ROC/Incorporation/Board Resolution/Acme LLC BR.pdf', { docType: 'board_resolution', values: resolution }), hints);
+    expect(found.destination).toMatchObject({ kind: 'checklist', docType: 'board_resolution' });
+    if (found.destination.kind !== 'checklist') throw new Error('expected a checklist slot');
+    expect(found.destination.fields.map((f) => `${f.stepId}/${f.fieldId}`)).toEqual(['pre-3/signedBoardResolutionUrl']);
+    expect(found.values.map((x) => x.targetKey)).toEqual(resolution.map((x) => x.targetKey));
+  });
+
+  it('keeps a draft resolution out of the signed slot, but still gives its values', () => {
+    const draft = classifyFile(file('br2', 'Acme/1.Acme_BR.docx', { docType: 'board_resolution', values: resolution }), hints);
+    expect(draft.destination).toMatchObject({ kind: 'vault', category: 'Incorporation' });
+    expect(draft.values).toHaveLength(resolution.length);
+    expect(classifyFile(file('br3', 'Acme/Draft/Acme BR.pdf', { docType: 'board_resolution', values: resolution }), hints).destination.kind).toBe('vault');
+  });
+
+  it('gives an MOA, a consent letter and the details sheet their values with no slot', () => {
+    for (const docType of ['moa', 'consent_letter', 'incorporation_data']) {
+      const found = classifyFile(file(docType, `Acme/${docType}.docx`, { docType, values: resolution.slice(0, 2) }), hints);
+      expect(found.destination.kind).toBe('vault');
+      expect(found.values).toHaveLength(2);
+    }
+  });
+
+  it('offers a passport to a director\'s copy or the signatory\'s KYC', () => {
+    const found = classifyFile(file('pp', 'Acme/passport.pdf', { docType: 'passport' }), hints);
+    expect(found.destination).toMatchObject({ kind: 'checklist', copy: false });
+    if (found.destination.kind !== 'checklist') throw new Error('expected a checklist slot');
+    expect(found.destination.fields.map((f) => f.fieldId)).toEqual(['passportCopyUrl', 'passportUrl']);
+  });
+
+  it('gives a tax notice and a labour sheet no values', () => {
+    expect(classifyFile(file('tn', 'Acme/notice.pdf', { docType: 'tax_notice', values: resolution }), hints).values).toEqual([]);
+  });
+});
+
 describe('classifyFile: the destination', () => {
   it('sends a labour sheet to the register with the month from the grid, else from the names, and a state from the names', () => {
     const grid = classifyFile(file('a', 'Acme/pay.xlsx', sheet('attendance', { from: '2026-09-01', to: '2026-09-30' })), hints);

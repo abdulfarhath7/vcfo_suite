@@ -42,3 +42,51 @@ describe('PLAN K completeness marks on the lead rail', () => {
     expect(managerRows.every((r) => r.completeness === undefined)).toBe(true);
   });
 });
+
+describe('rail marks follow the step head', () => {
+  const phase1 = getPreIncPhases()[0]!.items;
+  const done = (rows: ReturnType<typeof journeyRailItems>) => rows.filter((r) => r.gate.kind === 'done').map((r) => r.item.id);
+
+  // Client Details is filled but not submitted, so every later step is gated behind it.
+  const filledNotSubmitted = { status: 'in-progress', responses: { proposedName1: 'Emburse India' } };
+
+  it('ticks and counts a direct-flow step complete by its data, even behind an open step', () => {
+    const state = {
+      'pre-1': filledNotSubmitted,
+      'pre-4': { status: 'in-progress', locked: true, clientSubmittedAt: '2026-11-20T10:00:00Z' },
+    } as never;
+    const rows = journeyRailItems(phase1, gateActiveCatalog(state, 'staff'), state, null, 'independent', undefined, false);
+    const pre4 = rows.find((r) => r.item.id === 'pre-4')!;
+    expect(pre4.status).toBe('completed');
+    expect(done(rows)).toEqual(['pre-4']);
+    // Opening and editing still follow the real gate.
+    expect(pre4.gate.canEdit).toBe(false);
+  });
+
+  it('ticks the board resolution step the head shows as Done', () => {
+    const state = { 'pre-1': filledNotSubmitted, 'pre-2': { status: 'completed' } } as never;
+    const rows = journeyRailItems(phase1, gateActiveCatalog(state, 'staff'), state, null, 'independent', undefined, false);
+    expect(done(rows)).toEqual(['pre-2']);
+    expect(rows.find((r) => r.item.id === 'pre-1')!.gate.kind).not.toBe('done');
+  });
+
+  it('still needs the usual approval for a normal step', () => {
+    const state = { 'pre-1': filledNotSubmitted, 'pre-2': { status: 'in-progress', responses: { resolutionDate: '2026-11-20' } } } as never;
+    const rows = journeyRailItems(phase1, gateActiveCatalog(state, 'staff'), state, null, 'independent', undefined, false);
+    expect(done(rows)).toEqual([]);
+  });
+
+  it('counts the same steps for an admin, a lead and the client', () => {
+    const state = {
+      'pre-1': filledNotSubmitted,
+      'pre-2': { status: 'completed' },
+      'pre-4': { status: 'in-progress', locked: true, clientSubmittedAt: '2026-11-20T10:00:00Z' },
+    } as never;
+    const admin = journeyRailItems(phase1, gateActiveCatalog(state, 'staff'), state, null, 'independent', undefined, false);
+    const lead = journeyRailItems(phase1, gateActiveCatalog(state, 'intern'), state, null, 'independent', undefined, false, { ownershipType: 'independent' });
+    const client = journeyRailItems(phase1, gateActiveCatalog(state, 'client'), state, null, 'independent', undefined, true);
+    expect(done(admin)).toEqual(['pre-2', 'pre-4']);
+    expect(done(lead)).toEqual(done(admin));
+    expect(done(client)).toEqual(done(admin));
+  });
+});

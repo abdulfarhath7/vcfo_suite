@@ -113,14 +113,21 @@ function firstOfMonth(date: Date): Date {
  * Pre-incorporation is read off `scope` (derived by the caller from
  * `isIncorporated`, never a rule of this view's own). The grid stays in its
  * genuine empty state under the notice; nothing is invented to fill it.
+ *
+ * `embedded` renders the calendar inside another page (the client record's Calendar tab): no page
+ * title or heading of its own and no calendar-file import menu, which is a firm-wide action. The
+ * record passes a scope of one engagement, so the company picker never shows there.
  */
 export function ComplianceCalendarView({
   basePath,
   scope,
   hrefs,
+  embedded = false,
 }: {
   basePath: string;
   scope: ComplianceScope;
+  /** Inside another page: no SEO title, no heading, no import menu. */
+  embedded?: boolean;
   /** Where a filing or a task opens when the shell has no obligation pages (super admin Practice). */
   hrefs?: { record?: (row: FilingRow) => string; task?: (t: TaskRowDto) => string };
 }) {
@@ -354,7 +361,7 @@ export function ComplianceCalendarView({
     source: { source: 'compliance-calendar', companyId, sole: Boolean(sole), monthKey, view, cat, areas: areasOn },
   };
   const exportButton = <ExportToExcelButton {...exportInput} className="h-8" />;
-  const importMenu = statutoryQuery.data?.canImport ? (
+  const importMenu = statutoryQuery.data?.canImport && !embedded ? (
     <StatutoryCalendarImport
       data={statutoryQuery.data}
       onPublished={(fyKey) => {
@@ -369,14 +376,16 @@ export function ComplianceCalendarView({
 
   return (
     <PageTransition>
-      <SEO
-        title="Compliance calendar — VCFO Suite"
-        description="Statutory filing obligations plotted by due date."
-        path={`${basePath}/calendar`}
-      />
+      {embedded ? null : (
+        <SEO
+          title="Compliance calendar — VCFO Suite"
+          description="Statutory filing obligations plotted by due date."
+          path={`${basePath}/calendar`}
+        />
+      )}
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
-        <h1 className="sr-only">Compliance calendar</h1>
+        {embedded ? null : <h1 className="sr-only">Compliance calendar</h1>}
 
         {compactBar ? (
           <>

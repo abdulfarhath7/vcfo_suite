@@ -361,6 +361,28 @@ describe('summary', () => {
     expect(summary.openStepId).toBe('pre-4');
   });
 
+  it('a whole fill reports the suggestions, the Ask-client list, what was left, the conflicts and the board resolution once', () => {
+    const summary = fillSummary(
+      { companyName: 'Bonterra', status: 'done', steps: [step('pre-1', 'Client Details', 9, ['Date of Board Resolution'])] },
+      {
+        ladder: {
+          suggested: [{ stepId: 'pre-13', label: 'Number of equity shares' }],
+          askClient: [{ stepId: 'pre-1', label: 'Date of Board Resolution' }, { stepId: 'pre-1', label: 'KYC of the person signing' }],
+          left: [{ stepId: 'pre-1', label: 'Main NIC code', reason: 'The project lead fills this on the step page.' }],
+          requestList: { id: 'list-1', href: '/app/lead/requests?list=list-1', items: 2 },
+        },
+        conflicts: 1,
+        boardResolutionLine: 'Draft Board Resolution: not generated yet; it still needs Main NIC code.',
+      },
+    );
+    expect(summary.line).toContain('Filled 9 values in 1 step for Bonterra.');
+    expect(summary.line).toContain('1 answer was filled as suggested (Number of equity shares): check it.');
+    expect(summary.line).toContain('Only the client can give 2 answers; I put them on one draft Ask-client list, not sent.');
+    expect(summary.line).toContain('Left for the project lead: Main NIC code.');
+    expect(summary.line).toContain('Documents differed on 1 answer');
+    expect(summary.line).toContain('Draft Board Resolution: not generated yet');
+  });
+
   it('the closing chat message carries the per-step list and an Open link', async () => {
     setCard([makeRow('name', 'pre-1'), makeRow('later', 'pre-4')]);
     checklist = { 'pre-1': { missing: ['PAN'] }, 'pre-4': { missing: ['SRN', 'Date'] } };

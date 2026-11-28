@@ -39,6 +39,14 @@ export function maxUploadSizeError(): string {
 export const DROP_MAX_FILES = 50;
 export const DROP_MAX_BYTES = 200 * 1024 * 1024;
 
+/**
+ * A fetch that a fill asks for ("fill Bonterra", "fill everything") reads the client's whole folder in
+ * one go, so it is not held to the drop's 50 files. These limits only stop a runaway folder; the
+ * run's token budget (`ASK_FETCH_MAX_TOKENS`) still applies, and files read before are reused.
+ */
+export const FETCH_MAX_FILES = 400;
+export const FETCH_MAX_BYTES = 2 * 1024 * 1024 * 1024;
+
 export function formatUploadFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;

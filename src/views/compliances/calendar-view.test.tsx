@@ -315,3 +315,31 @@ describe('Statutory and non-statutory filter (C-1 to C-4)', () => {
     expect(within(screen.getByRole('region', { name: 'Coming up' })).queryByText('Board pack')).toBeNull();
   });
 });
+
+describe('ComplianceCalendarView embedded on a client record (Calendar tab)', () => {
+  const one = (pre: boolean) => ({
+    audience: 'staff' as const,
+    engagements: [engagement('acme', 'Acme Pvt Ltd')],
+    preIncorporationIds: new Set<string>(pre ? ['acme'] : []),
+  });
+
+  it('shows only that client, with no company picker, heading or calendar file menu', () => {
+    canImport = true;
+    search = new URLSearchParams('tab=calendar&date=2099-10-20');
+    render(<ComplianceCalendarView basePath="/app/admin/compliances" scope={one(false)} embedded />);
+    expect(screen.queryByRole('combobox', { name: 'Company' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Compliance calendar' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Calendar file/ })).toBeNull();
+    // Acme's filing shows; Birch's does not.
+    expect(document.querySelector('a[href="/app/admin/compliances/obligations/gst-3b/a"]')).not.toBeNull();
+    expect(document.querySelector('a[href="/app/admin/compliances/obligations/gst-3b/b"]')).toBeNull();
+    // The tasks are read for this client only.
+    expect(taskQueries.at(-1)).toMatchObject({ engagementId: 'acme' });
+  });
+
+  it('shows the pre-incorporation notice instead of a blank grid before incorporation', () => {
+    search = new URLSearchParams('tab=calendar');
+    render(<ComplianceCalendarView basePath="/app/admin/compliances" scope={one(true)} embedded />);
+    expect(screen.getByText('Compliance begins after incorporation')).toBeInTheDocument();
+  });
+});

@@ -39,6 +39,7 @@ export const DOC_TYPE_WORDS: Readonly<Record<string, string>> = {
   noc: 'no-objection certificate',
   address_proof: 'proof of office address',
   consent_letter: 'consent letter',
+  incorporation_data: 'incorporation details sheet',
   incorporation_certificate: 'certificate of incorporation',
   pan_card: 'PAN card',
   aadhaar_card: 'Aadhaar card',

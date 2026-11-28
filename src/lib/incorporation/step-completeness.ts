@@ -51,6 +51,27 @@ function fieldLabel(fields: readonly ChecklistField[], key: string): string | nu
   return key;
 }
 
+/**
+ * The answers a step still needs, as the validator's keys (`directors.<entry>.firstName` inside a
+ * list) with their labels. Workflow keys (`_pre1Gate`) are left out. Empty for a step with no rules.
+ */
+export function stepMissingKeys(input: { stepId: string; state: StepState; engagement?: CompletenessEngagement | null }): Array<{ key: string; label: string }> {
+  const item = getItem(input.stepId);
+  if (!item || !isDirectFlowStep(input.stepId)) return [];
+  const engagement = input.engagement ?? null;
+  const { errors } = validateStepAgainstState({
+    itemId: input.stepId,
+    responses: input.state[input.stepId]?.responses ?? {},
+    state: input.state as Parameters<typeof validateStepAgainstState>[0]['state'],
+    engagement: { ...engagement, ownershipType: coerceOwnershipType(engagement?.ownershipType) },
+  });
+  const fields = getClientResponseFields(item);
+  return Object.keys(errors).flatMap((key) => {
+    const label = fieldLabel(fields, key);
+    return label ? [{ key, label }] : [];
+  });
+}
+
 export function stepCompleteness(input: { stepId: string; state: StepState; engagement?: CompletenessEngagement | null }): StepCompleteness | null {
   const item = getItem(input.stepId);
   if (!item || !isDirectFlowStep(input.stepId)) return null;

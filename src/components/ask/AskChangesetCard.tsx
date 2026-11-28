@@ -17,11 +17,35 @@ import { dispatchFillStart, serverFillMode, useFillMode, useFillSpeed } from './
  * A card with rows for more than one destination (a dropped folder, say) shows each destination as a
  * section that folds, with its counts and its own "Accept all clear". A card of more than
  * `FOLD_ABOVE` rows starts with every section folded.
+ *
+ * "Accept all and fill" (top and bottom) does the three clicks in one: it accepts every row the
+ * person may accept, rows that need a look included (each keeps the value the card proposes), saves
+ * them through the same decide call as "Save accepted" (so the server checks every rule again and
+ * Undo still works), and then, when the step order still holds rows, starts "Fill into app" in the
+ * composer's mode and speed. Rows it cannot accept stay on the card, and one line says how many were
+ * accepted and why the rest were left. The fill saves drafts only; it never submits.
  */
 
 const FOLD_ABOVE = 20;
 /** Row statuses still to save; matches OPEN_ROW in src/lib/ask/changeset/apply.ts (server-only). */
 const OPEN_ROWS: ReadonlySet<string> = new Set(['proposed', 'edited', 'accepted', 'held', 'failed']);
+
+/** A row the step order holds back: "Fill into app" puts it in once the steps before it are done. */
+const heldByStepOrder = (row: ChangesetRowView) => OPEN_ROWS.has(row.status) && row.checks.some((check) => check.rule === 'gate' && !check.ok);
+
+/** Does the card still hold rows for "Fill into app"? */
+const fillWaiting = (view: ChangesetView) =>
+  (view.status === 'proposed' || view.status === 'partly_applied') && view.rows.some(heldByStepOrder);
+
+/** "Accepted 38 · filling · 3 left for review (held by a rule, needs a manager)". */
+function acceptAllLine(accepted: number, filling: boolean, left: ChangesetRowView[]): string {
+  const parts = [`Accepted ${accepted}`, filling ? 'filling' : 'saved'];
+  if (left.length > 0) {
+    const reasons = [...new Set(left.map((row) => row.heldReason ?? row.error ?? (row.canDecide ? 'needs a look' : 'not yours to accept')))];
+    parts.push(`${left.length} left for review (${reasons.join(', ')})`);
+  }
+  return parts.join(' · ');
+}
 
 export function AskChangesetCard({ changesetId }: { changesetId: string }) {
   const queryClient = useQueryClient();
@@ -48,6 +72,25 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
       dispatchFillStart({ runId: started.runId, mode: started.mode, autoAccept: started.mode === 'manual' && fillMode === 'auto' }),
   });
 
+  // "Accept all and fill": save every pickable row, then start the fill the step order still holds.
+  const [acceptAllNote, setAcceptAllNote] = useState<string | null>(null);
+  const acceptAll = useMutation({
+    mutationFn: async ({ ids, contentHash }: { ids: string[]; contentHash: string }) => {
+      const view = await decideChangeset(changesetId, { contentHash, accept: ids });
+      queryClient.setQueryData(queryKey, view);
+      setAccepted(new Set());
+      setEditing(null);
+      const filling = fillWaiting(view);
+      if (filling) {
+        const started = await startFill({ changesetId, mode: serverFillMode(fillMode), chip: fillMode });
+        dispatchFillStart({ runId: started.runId, mode: started.mode, autoAccept: started.mode === 'manual' && fillMode === 'auto' });
+      }
+      const left = view.rows.filter((row) => OPEN_ROWS.has(row.status) && !heldByStepOrder(row));
+      return acceptAllLine(ids.length, filling, left);
+    },
+    onSuccess: (line) => setAcceptAllNote(line),
+  });
+
   if (loadError) return <p className="rounded-md bg-surface-sunken px-3 py-2 text-[13px] text-ink-muted">This card is not available.</p>;
   if (!card) return null;
 
@@ -56,7 +99,26 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
   const chosen = card.rows.filter((row) => accepted.has(row.id) && canPick(row));
   const isClear = (row: ChangesetRowView) => canPick(row) && !row.needsLook;
   const easy = card.rows.filter(isClear);
-  const heldByOrder = open && card.rows.some((row) => OPEN_ROWS.has(row.status) && row.checks.some((check) => check.rule === 'gate' && !check.ok));
+  const heldByOrder = fillWaiting(card);
+  const pickable = card.rows.filter(canPick);
+  const working = acceptAll.isPending || change.isPending || fill.isPending;
+  const acceptAllButton =
+    pickable.length > 0 ? (
+      <Button
+        type="button"
+        size="sm"
+        disabled={working}
+        onClick={() => acceptAll.mutate({ ids: pickable.map((row) => row.id), contentHash: card.contentHash })}
+        title="Accept every row you may accept, save them, then fill them into the app as drafts"
+      >
+        {acceptAll.isPending ? 'Accepting and filling…' : `Accept all and fill (${pickable.length})`}
+      </Button>
+    ) : null;
+  const acceptAllStatus = acceptAllNote ? (
+    <p role="status" className="w-full text-[12px] text-ink-muted">
+      {acceptAllNote}
+    </p>
+  ) : null;
   const acceptMore = (ids: string[]) => setAccepted((now) => new Set([...now, ...ids]));
   const byId = new Map(card.rows.map((row) => [row.id, row]));
   // An older server may send no groups; the whole card is then one plain list.
@@ -96,6 +158,7 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
               : 'Nobody is set up to receive this yet.'}
           </p>
         ) : null}
+        {acceptAllButton ? <div className="mt-2">{acceptAllButton}</div> : null}
       </header>
       {sectioned ? (
         <div>
@@ -121,6 +184,7 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
         <ul className="divide-y divide-line">{groups.flatMap((group) => group.rowIds).map((id) => byId.get(id)).filter((row): row is ChangesetRowView => Boolean(row)).map(renderRow)}</ul>
       )}
       <footer className="flex flex-wrap items-center gap-2 border-t border-line px-3 py-2">
+        {acceptAllButton}
         {open && easy.length > 1 ? (
           <Button type="button" size="sm" variant="ghost" onClick={() => acceptMore(easy.map((row) => row.id))}>
             Accept all clear rows
@@ -153,6 +217,12 @@ export function AskChangesetCard({ changesetId }: { changesetId: string }) {
         ) : null}
         {card.status === 'rejected' ? <p className="text-[12px] text-ink-muted">Discarded. Nothing was saved.</p> : null}
         {card.status === 'expired' ? <p className="text-[12px] text-ink-muted">This card expired. Please send the details again.</p> : null}
+        {acceptAllStatus}
+        {acceptAll.error ? (
+          <p role="alert" className="w-full text-[12px] text-danger">
+            {(acceptAll.error as Error).message}
+          </p>
+        ) : null}
         {fill.error ? (
           <p role="alert" className="w-full text-[12px] text-danger">
             {(fill.error as Error).message}

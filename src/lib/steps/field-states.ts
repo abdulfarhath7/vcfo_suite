@@ -28,28 +28,29 @@ function daysSince(iso: string | null | undefined, now: Date = new Date()): numb
 }
 
 /**
- * The 104px chip and the ST5 mark of one field (prototype step page): "Asked · 3d" teal,
- * "Review" amber (answered, waiting for a decision), "Accepted" green, "Sent back" red.
- * A field with no row is "Not asked" (outlined mark, no chip).
+ * The 104px chip of one field (prototype step page): "Asked · 3d" teal, "Review" amber (answered,
+ * waiting for a decision), "Accepted" green, "Sent back" red. A field with no row is "Not asked"
+ * and shows no chip. The field carries no mark before its label: an outlined square read as a
+ * checkbox to tick, so the chip alone says the state.
  */
 export function fieldStatePresentation(
   s: Pick<StepFieldState, 'state' | 'askedAt'> | null | undefined,
   now: Date = new Date(),
-): { chip: string | null; mark: 'done' | 'now' | 'next'; tone: 'prog' | 'teal' | 'warn' | 'bad' } {
-  if (!s) return { chip: null, mark: 'next', tone: 'prog' };
+): { chip: string | null } {
+  if (!s) return { chip: null };
   switch (s.state) {
     case 'asked': {
       const d = daysSince(s.askedAt, now);
-      return { chip: d === null ? 'Asked' : `Asked · ${d}d`, mark: 'now', tone: 'teal' };
+      return { chip: d === null ? 'Asked' : `Asked · ${d}d` };
     }
     case 'answered':
-      return { chip: 'Review', mark: 'now', tone: 'warn' };
+      return { chip: 'Review' };
     case 'approved':
-      return { chip: 'Accepted', mark: 'done', tone: 'prog' };
+      return { chip: 'Accepted' };
     case 'sent_back':
-      return { chip: 'Sent back', mark: 'now', tone: 'bad' };
+      return { chip: 'Sent back' };
     default:
-      return { chip: null, mark: 'next', tone: 'prog' };
+      return { chip: null };
   }
 }
 
