@@ -7,11 +7,19 @@ const fetchChangeset = vi.fn();
 const decideChangeset = vi.fn();
 const editChangesetRow = vi.fn();
 const undoChangeset = vi.fn();
+const startFill = vi.fn();
+const dispatchFillStart = vi.fn();
 vi.mock('@/hooks/ask/ask-api', () => ({
+  startFill: (...a: unknown[]) => startFill(...a),
   fetchChangeset: (...a: unknown[]) => fetchChangeset(...a),
   decideChangeset: (...a: unknown[]) => decideChangeset(...a),
   editChangesetRow: (...a: unknown[]) => editChangesetRow(...a),
   undoChangeset: (...a: unknown[]) => undoChangeset(...a),
+}));
+
+vi.mock('./fill/fill-mode', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./fill/fill-mode')>()),
+  dispatchFillStart: (...a: unknown[]) => dispatchFillStart(...a),
 }));
 
 const { AskChangesetCard } = await import('./AskChangesetCard');
@@ -142,5 +150,54 @@ describe('AskChangesetCard', () => {
     show(card(rows, [group('values', 'Checklist values', rows, { ready: 0, held: 0, applied: 1 })], { status: 'applied', canUndo: true }));
     expect(await screen.findByRole('button', { name: 'Undo' })).toBeInTheDocument();
     expect(screen.getByText('Saved', { selector: 'span *, span' })).toBeInTheDocument();
+  });
+
+  it('accepts every row it may in one press, needs-a-look rows included, saves, then starts the fill', async () => {
+    const gate = { rule: 'gate', ok: false } as ChangesetRowView['checks'][number];
+    const rows = [
+      row('a'),
+      row('b', { needsLook: true }),
+      row('c', { stepId: 's2' }),
+      row('h', { heldReason: 'Closed month', canAccept: false }),
+    ];
+    const view = card(rows, [group('values', 'Checklist values', rows)]);
+    fetchChangeset.mockResolvedValue(view);
+    // The server saves a and b, holds c for the step order, and keeps h back by its rule.
+    const saved = card(
+      [
+        row('a', { status: 'applied', canDecide: false }),
+        row('b', { status: 'applied', canDecide: false }),
+        row('c', { stepId: 's2', status: 'held', checks: [gate] }),
+        row('h', { heldReason: 'Closed month', canAccept: false }),
+      ],
+      [group('values', 'Checklist values', rows)],
+      { status: 'partly_applied' },
+    );
+    decideChangeset.mockResolvedValue(saved);
+    startFill.mockResolvedValue({ runId: 'run-1', mode: 'manual', view: {} });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <AskChangesetCard changesetId="cs-1" />
+      </QueryClientProvider>,
+    );
+    const buttons = await screen.findAllByRole('button', { name: 'Accept all and fill (3)' });
+    // One at the top of the card and one at the bottom.
+    expect(buttons).toHaveLength(2);
+    fireEvent.click(buttons[0]!);
+    await waitFor(() => expect(dispatchFillStart).toHaveBeenCalledWith(expect.objectContaining({ runId: 'run-1' })));
+    expect(decideChangeset).toHaveBeenCalledWith('cs-1', { contentHash: 'hash-1', accept: ['a', 'b', 'c'] });
+    expect(startFill).toHaveBeenCalledWith(expect.objectContaining({ changesetId: 'cs-1' }));
+    expect(decideChangeset.mock.invocationCallOrder[0]!).toBeLessThan(startFill.mock.invocationCallOrder[0]!);
+    expect(await screen.findByRole('status')).toHaveTextContent('Accepted 3 · filling · 1 left for review (Closed month)');
+    // The held row stays on the card.
+    expect(screen.getByText('Field h')).toBeInTheDocument();
+  });
+
+  it('hides Accept all and fill when the card is closed', async () => {
+    const rows = [row('a')];
+    show(card(rows, [group('values', 'Checklist values', rows)], { status: 'rejected' }));
+    expect(await screen.findByText('Discarded. Nothing was saved.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Accept all and fill/ })).not.toBeInTheDocument();
   });
 });
