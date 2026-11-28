@@ -4,7 +4,6 @@ import { isLeadOnlyField } from '@/lib/incorporation/pre-inc-direct-flow';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Chip, type ChipTone } from '@/components/ui/spectrum-chip';
-import { StepMark } from '@/components/ui/step-track';
 import { useApp } from '@/context/AppContext';
 import { clientFieldAskChip, fieldStatePresentation, type StepFieldAction, type StepFieldState } from '@/lib/steps/field-states';
 import { stepFieldStatesKey, useStepFieldStates } from '@/hooks/use-step-field-states';
@@ -13,13 +12,14 @@ import { errorMessage, toastError, toastSuccess } from '@/lib/toast-errors';
 /**
  * PER-FIELD REVIEW on a staff step page (prototype step Forms tab, S-496 to S-499).
  *
- * Each field shows a 20px ST5 mark (accepted done, asked teal, review amber, sent back red, not
- * asked outlined) and a 104px chip ("Asked · 3d", "Review", "Accepted", "Sent back"). The actions
+ * Each field shows a 104px chip ("Asked · 3d", "Review", "Accepted", "Sent back") at the right of
+ * its label, and nothing when the field is not asked. There is no mark before the label: the old
+ * outlined square looked like a checkbox, and project leads kept clicking it. The actions
  * follow the state: "Ask client" on a field not asked, "Send reminder" on an asked field (it posts
  * one message on the client thread), "Accept" and "Reject" on a field under review, "Ask again" on
  * a field sent back. The data is `step_field_states` through
  * `/api/engagements/:id/field-states`, which scopes by role; one query per step feeds every
- * field. A client session sees no actions and no mark; a field SBC asked for shows the chip
+ * field. A client session sees no actions; a field SBC asked for shows the chip
  * "Asked by SBC · 3d", and a field sent back shows "Please correct" (`clientFieldAskChip`).
  */
 
@@ -36,14 +36,6 @@ function useFieldState(engagementId: string | undefined, itemId: string, fieldId
   const { staff, client } = useViewer();
   const q = useStepFieldStates(engagementId, itemId, staff || client);
   return { staff, client, loaded: q.isSuccess, state: q.data?.find((s) => s.fieldId === fieldId) ?? null };
-}
-
-/** The 20px ST5 mark before a field's label. */
-export function FieldReviewMark({ engagementId, itemId, fieldId }: { engagementId?: string; itemId: string; fieldId: string }) {
-  const { staff, loaded, state } = useFieldState(engagementId, itemId, fieldId);
-  if (!staff || !engagementId || !loaded) return null;
-  const p = fieldStatePresentation(state);
-  return <StepMark state={p.mark} tone={p.tone} size={20} label={p.chip ?? 'Not asked'} />;
 }
 
 /** The chip and the state's actions at the right of a field's label. */

@@ -39,7 +39,7 @@ import { fieldErrorId, isNicCodeInput } from './helpers';
 import type { FieldEditActions } from './field-edits';
 import type { ReadOnlyFieldRenderers } from './read-only-field';
 import type { MilestoneFormCtx } from './types';
-import { FieldReviewControls, FieldReviewMark } from './field-review';
+import { FieldReviewControls } from './field-review';
 
 /** The editable control for one field, by field type (repeat groups render recursively). */
 export function createEditableFieldRenderer(
@@ -107,7 +107,6 @@ export function createEditableFieldRenderer(
       >
         <div className="space-y-1">
           <div className="flex items-center justify-between gap-3">
-            <FieldReviewMark engagementId={engagementId} itemId={item.id} fieldId={field.id} />
             <Label
               htmlFor={`${item.id}-${field.id}`}
               className="flex-1 text-xs font-medium leading-snug text-ink-muted"
