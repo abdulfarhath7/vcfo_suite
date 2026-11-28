@@ -42,10 +42,15 @@ export async function startFetchThenFill(
     scope: FillScope | null;
     /** Files the person attached to the message, read in the same fetch (PLAN M4). */
     attachmentIds?: readonly string[];
+    /**
+     * A fill request implies the fetch (the fill-everything build): with no client named, the
+     * project on screen, or the person's only project, is read and filled.
+     */
+    implied?: boolean;
   },
 ): Promise<FetchThenFillStart | null> {
   if (ctx.role === 'client') return null;
-  const wantsFetch = asksToFetch(input.message);
+  const wantsFetch = asksToFetch(input.message) || input.implied === true;
   const rows = (await listEngagements(ctx)).filter((row) => !row.deletedAt);
   const options = rows.map((row) => ({ id: row.id, slug: row.slug ?? null, companyName: row.companyName }));
   const named = companiesNamed(input.message, options);
@@ -65,6 +70,8 @@ export async function startFetchThenFill(
     projectPath: `/projects/${engagement.slug || engagement.id}`,
     fillAfter,
     ...(input.attachmentIds?.length ? { attachmentIds: input.attachmentIds } : {}),
+    // A fill reads the whole folder, past the drop's 50 files (src/lib/upload-limits.ts).
+    wholeFolder: true,
   });
   if (started.ok === false) return { line: `${started.message} Nothing was filled.` };
   const what = input.scope ? `${input.scope.label} into the app` : 'it into the app';
@@ -92,7 +99,7 @@ export async function fillAfterDrop(ctx: AuthContext, input: { conversationId: s
     line = 'The folder gave me nothing to put on a card, so nothing was filled.';
   } else {
     try {
-      const started = await startFill(ctx, { changesetId: group.changesetId, mode: after.mode, ...(after.chip ? { chip: after.chip } : {}), conversationId: input.conversationId, scope });
+      const started = await startFill(ctx, { changesetId: group.changesetId, mode: after.mode, ...(after.chip ? { chip: after.chip } : {}), conversationId: input.conversationId, scope, everything: true });
       fill = { runId: started.runId, mode: started.mode };
       line =
         started.mode === 'manual'

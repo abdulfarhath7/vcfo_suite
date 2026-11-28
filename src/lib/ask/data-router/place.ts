@@ -57,7 +57,7 @@ export function placementRefusal(
   if (!from || !entry.onlyFrom?.length) return null;
   const docType = SHEET_FILE.test(from.fileName) ? 'form' : from.docType;
   if (entry.onlyFrom.includes(docType)) return null;
-  const allowed = entry.onlyFrom.map((t) => (t === 'form' ? "the client's details sheet" : `a ${docTypeWords(t)}`));
+  const allowed = [...new Set(entry.onlyFrom.map((t) => (t === 'form' || t === 'incorporation_data' ? "the client's details sheet" : `a ${docTypeWords(t)}`)))];
   const list = allowed.length > 1 ? `${allowed.slice(0, -1).join(', ')} or ${allowed.at(-1)}` : allowed[0];
   return `"${entry.label}" is taken only from ${list}, not from a ${docTypeWords(from.docType)}`;
 }

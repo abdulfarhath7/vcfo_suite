@@ -186,9 +186,21 @@ export async function listAskRunChangesets(
  * src/lib/ask/fill/plan.ts.
  */
 export async function findOpenFillCardInConversation(ctx: AuthContext, conversationId: string, now: Date): Promise<string | null> {
+  return (await findOpenFillCardDetails(ctx, conversationId, now))?.id ?? null;
+}
+
+/**
+ * The same card as `findOpenFillCardInConversation`, with its project and when it was made, so a
+ * "fill everything" request can tell a fresh card from an old one or one for another client.
+ */
+export async function findOpenFillCardDetails(
+  ctx: AuthContext,
+  conversationId: string,
+  now: Date,
+): Promise<{ id: string; createdAt: Date; engagementId: string | null } | null> {
   assertAskRole(ctx);
   const [row] = await db
-    .selectDistinct({ id: askChangesets.id, createdAt: askChangesets.createdAt })
+    .selectDistinct({ id: askChangesets.id, createdAt: askChangesets.createdAt, engagementId: askChangesets.engagementId })
     .from(askChangesets)
     .innerJoin(askChangesetRows, eq(askChangesetRows.changesetId, askChangesets.id))
     .where(
@@ -203,7 +215,7 @@ export async function findOpenFillCardInConversation(ctx: AuthContext, conversat
     )
     .orderBy(desc(askChangesets.createdAt))
     .limit(1);
-  return row?.id ?? null;
+  return row ?? null;
 }
 
 export async function getAskChangesetForDecision(ctx: AuthContext, id: string): Promise<ChangesetAccess | null> {

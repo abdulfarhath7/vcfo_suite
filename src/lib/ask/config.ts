@@ -148,6 +148,8 @@ export interface AskBudgets {
   dailyTokens: number;
   /** Input plus output tokens for one drop of many files; past it the drop stops and keeps what it prepared. */
   dropMaxTokens: number;
+  /** A fetch that a fill asked for reads the whole folder, so it gets a larger budget. */
+  fetchMaxTokens: number;
 }
 
 export function askBudgets(): AskBudgets {
@@ -157,6 +159,7 @@ export function askBudgets(): AskBudgets {
     answerMaxTokens: intEnv('ASK_ANSWER_MAX_TOKENS', 40_000),
     dailyTokens: intEnv('ASK_DAILY_TOKEN_BUDGET', 2_000_000),
     dropMaxTokens: intEnv('ASK_DROP_MAX_TOKENS', 400_000),
+    fetchMaxTokens: intEnv('ASK_FETCH_MAX_TOKENS', 1_500_000),
   };
 }
 

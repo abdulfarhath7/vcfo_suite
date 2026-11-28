@@ -1,6 +1,6 @@
 import { dropFileRefusal, isZipName } from '@/lib/ask/drop/extensions';
 import { cleanZipPath, ZIP_ENTRY_MAX_BYTES } from '@/lib/ask/drop/unzip';
-import { DROP_MAX_BYTES, DROP_MAX_FILES } from '@/lib/upload-limits';
+import { DROP_MAX_BYTES, DROP_MAX_FILES, FETCH_MAX_BYTES, FETCH_MAX_FILES } from '@/lib/upload-limits';
 import type { DriveItem } from './graph';
 
 /**
@@ -27,6 +27,13 @@ export const DEFAULT_WALK_LIMITS: WalkLimits = {
   maxDepth: 8,
 };
 
+/** A fetch that a fill asked for: the whole folder, within the fetch limits. */
+export const WHOLE_FOLDER_LIMITS: WalkLimits = {
+  ...DEFAULT_WALK_LIMITS,
+  maxFiles: FETCH_MAX_FILES,
+  maxTotalBytes: FETCH_MAX_BYTES,
+};
+
 export interface WalkFile {
   itemId: string;
   name: string;
@@ -45,6 +52,9 @@ export interface WalkSkip {
 
 export const TOO_MANY_FILES = 'Left out for now: a fetch takes 50 files. Ask again for the next ones.';
 export const TOO_LARGE_TOTAL = 'Left out: the folder holds more than 200 MB.';
+/** The same limits for a whole-folder fetch, with its own numbers. */
+export const TOO_MANY_FILES_WHOLE = `Left out: one fetch reads at most ${FETCH_MAX_FILES} files. Ask again for the rest.`;
+export const TOO_LARGE_TOTAL_WHOLE = 'Left out: the folder holds more than 2 GB.';
 export const TOO_LARGE_FILE = 'Left out: the file is larger than 25 MB.';
 export const NOT_A_FILE = 'Left out: this is a OneNote notebook or a link, not a file.';
 export const TOO_DEEP = 'Left out: the folder is nested too deep.';
@@ -97,11 +107,11 @@ export async function walkFolder(
         continue;
       }
       if (files.length >= limits.maxFiles) {
-        skipped.push({ itemId: child.id, path, size, reason: TOO_MANY_FILES });
+        skipped.push({ itemId: child.id, path, size, reason: limits.maxFiles > DROP_MAX_FILES ? TOO_MANY_FILES_WHOLE : TOO_MANY_FILES });
         continue;
       }
       if (bytes + size > limits.maxTotalBytes) {
-        skipped.push({ itemId: child.id, path, size, reason: TOO_LARGE_TOTAL });
+        skipped.push({ itemId: child.id, path, size, reason: limits.maxTotalBytes > DROP_MAX_BYTES ? TOO_LARGE_TOTAL_WHOLE : TOO_LARGE_TOTAL });
         continue;
       }
       files.push({ itemId: child.id, name: child.name, path, size, cTag: child.cTag ?? null });

@@ -87,10 +87,22 @@ describe('planRows', () => {
     expect(differs.displayOld).not.toContain('0123');
   });
 
-  it('shows the difference when two documents disagree, and picks neither silently', () => {
+  it('keeps the first value on a tie and the other as a note that does not hold the row', () => {
     const { draft } = planRows(input([place('director.dob', '03/04/1985'), place('director.dob', '04/04/1985')], openAt('pre-15')));
     expect(draft.rows).toHaveLength(1);
-    expect(draft.rows[0]!.checks).toContainEqual(expect.objectContaining({ rule: 'documents_differ', ok: false }));
+    expect(draft.rows[0]!.checks).toContainEqual(expect.objectContaining({ rule: 'documents_chosen', ok: true }));
+  });
+
+  it('chooses the stronger document when two disagree: signed over final over draft, then the newer', () => {
+    const entry = catalogEntry('company.proposed_name_1')!;
+    const from = (value: string, fileName: string) => ({ entry, value: { label: 'Proposed name 1', value, page: 1, person: null, confidence: 0.95 }, source: { kind: 'attachment' as const, attachmentId: fileName, fileName } });
+    const pick = (...values: ReturnType<typeof from>[]) => planRows(input(values, openAt('pre-1'))).draft.rows.find((r) => r.label === 'Proposed company name 1')!;
+    const signed = pick(from('Acme Draft Name Private Limited', '1.Acme_BR draft.docx'), from('Acme India Private Limited', 'Acme LLC BR signed.pdf'));
+    expect(signed.newValue).toBe('Acme India Private Limited');
+    expect(signed.source).toMatchObject({ fileName: 'Acme LLC BR signed.pdf' });
+    expect(signed.checks).toContainEqual(expect.objectContaining({ rule: 'documents_chosen', ok: true, choice: 'Acme Draft Name Private Limited', message: expect.stringMatching(/I used Acme LLC BR signed\.pdf \(signed\)\. 1\.Acme_BR draft\.docx says/) }));
+    expect(pick(from('Old Name Private Limited', 'Acme BR v1.pdf'), from('New Name Private Limited', 'Acme BR v2.pdf')).newValue).toBe('New Name Private Limited');
+    expect(pick(from('Final Name Private Limited', 'Acme BR final.pdf'), from('Plain Name Private Limited', 'Acme BR.pdf')).newValue).toBe('Final Name Private Limited');
   });
 
   it('saves a row on a step not open yet as a draft, with the note (PLAN K)', () => {

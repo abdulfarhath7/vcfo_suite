@@ -8,7 +8,7 @@ import { catalogEntry, writableUses } from '@/lib/ask/field-catalog';
 import { docxToText } from '@/lib/ask/ingest/extract';
 import type { LlmProvider, LlmRequest } from '@/lib/ask/provider';
 import { placeValues } from './place';
-import { cellText, guessDocType, missingTargets, readFile } from './read';
+import { cellText, guessDocType, missingTargets, readFile, withGuessedType } from './read';
 
 /**
  * PLAN M: Ask reads every document and fills the app. Classification of the new document types,
@@ -77,6 +77,16 @@ describe('the new document types (M1)', () => {
   it('knows a board resolution, an MOA, an AOA and a NOC from the words or the file name', () => {
     expect(guessDocType(RESOLUTION.join('\n'), 'scan.docx')).toBe('board_resolution');
     expect(guessDocType('MEMORANDUM OF ASSOCIATION OF ACME PRIVATE LIMITED', 'x.pdf')).toBe('moa');
+    // The client's details sheet mentions the board resolution it feeds; its name settles the type.
+    expect(guessDocType('Person signing the board resolution: ... RESOLVED THAT', 'Acme_India_Incorporation_Data.docx')).toBe('incorporation_data');
+    // The name wins over the model's type too, but never over an identity document.
+    const part = (docType: string) => ({ docType, company: null, values: [], pages: [] });
+    const read = (docType: string) => ({ docType, company: null, values: [], parts: [part(docType)], sensitive: false, usedModel: true });
+    expect(withGuessedType(read('board_resolution'), 'incorporation_data').docType).toBe('incorporation_data');
+    expect(withGuessedType(read('passport'), 'incorporation_data').docType).toBe('passport');
+    expect(withGuessedType(read('moa'), 'board_resolution').docType).toBe('moa');
+    // Every Client Details fact is asked of the details sheet.
+    expect(missingTargets('incorporation_data', []).map((e) => e.key)).toEqual(expect.arrayContaining(['company.business_description', 'company.proposed_name_1', 'capital.paid_up', 'signatory.designation', 'signatory.resolution_date', 'director.name']));
     expect(guessDocType('ARTICLES OF ASSOCIATION', 'x.pdf')).toBe('aoa');
     expect(guessDocType('', 'NOC from owner.pdf')).toBe('noc');
     expect(guessDocType('', 'Bonterra_BR_signed.pdf')).toBe('board_resolution');

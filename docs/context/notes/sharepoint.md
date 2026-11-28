@@ -91,3 +91,22 @@ person accepts. Built 24 Nov 2026 on `feat/sharepoint`.
 - Files attached to a "fill X into the app" message are read in the same drop (`attachmentIds` on
   `startSharepointDrop`); only the person's own rows that are not in another run are taken.
 
+
+## Fill everything (feat/ask-fill-everything, 28 Nov 2026)
+
+- A chat fill implies the fetch (`startFetchThenFill` with `implied`) and the fetch has `wholeFolder`
+  set: the walk uses `WHOLE_FOLDER_LIMITS` (400 files, 2 GB) and the run gets `ASK_FETCH_MAX_TOKENS`.
+  A plain "fetch Bonterra" keeps the drop's 50 files and 400k tokens. The unpack step and the app
+  documents use the same larger room for a whole-folder fetch.
+- SharePoint's modified time is not stored on the drop's attachments, so "newer" in a conflict comes
+  from a version number or a date in the file and folder names (`source-strength.ts`). Storing
+  `lastModifiedDateTime` would need a column on `ask_attachments`.
+- A file whose name says incorporation data or client details is typed `incorporation_data` even when
+  the model says board resolution (`STRONG_TYPE_BY_NAME`), because the sheet's text mentions the
+  resolution it feeds and `TYPE_BY_TEXT` would otherwise give it the signed-resolution slot.
+- The draft board resolution generator refuses until Client Details is submitted
+  (`validateBoardResolutionGeneration`). A fill never submits, so after a first fill the message
+  usually says "Client Details must be submitted first"; submit it, then ask to fill again or press
+  Generate. A Manual run never renders the .docx (that is slow work for the job).
+- Suggested rows are appended to the card with `appendAskChangesetRows`, which needs the card still
+  `proposed`; the ladder runs before the fill starts, and only for a new run.

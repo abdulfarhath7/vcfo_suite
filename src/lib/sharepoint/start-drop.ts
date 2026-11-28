@@ -42,6 +42,8 @@ export async function startSharepointDrop(
     appDocs?: boolean;
     /** Files the person attached to the request, read in the same drop. Only their own rows count. */
     attachmentIds?: readonly string[];
+    /** Read the whole folder within the fetch limits, not the drop's 50 files (a fill asked for it). */
+    wholeFolder?: boolean;
   },
 ): Promise<SharepointDropStart> {
   if (ctx.role === 'client') return { ok: false, message: 'Reading SharePoint is not available here.' };
@@ -78,7 +80,7 @@ export async function startSharepointDrop(
   }
 
   const sharepoint = !sharepointNote;
-  const source = { kind: 'sharepoint' as const, engagementId: input.engagementId, folderName, companyName, ...(sharepoint ? {} : { sharepoint: false }), ...(appDocs ? { appDocs: true } : {}) };
+  const source = { kind: 'sharepoint' as const, engagementId: input.engagementId, folderName, companyName, ...(sharepoint ? {} : { sharepoint: false }), ...(appDocs ? { appDocs: true } : {}), ...(input.wholeFolder ? { wholeFolder: true } : {}) };
   const sources = fetchSourceWords(source);
   const instruction = maskIdentityNumbers(`${input.message.trim()} (files from ${sources} of ${companyName})`).slice(0, 2000);
   const state: DropState = {
@@ -96,7 +98,7 @@ export async function startSharepointDrop(
     conversationId: input.conversationId,
     workflow: DROP_WORKFLOW,
     goal,
-    budgetTokens: askBudgets().dropMaxTokens,
+    budgetTokens: input.wholeFolder ? askBudgets().fetchMaxTokens : askBudgets().dropMaxTokens,
     status: 'queued',
     state: state as unknown as JsonValue,
   });

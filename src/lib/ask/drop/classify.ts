@@ -1,6 +1,6 @@
 import { statesForPicker } from '@/data/labour-registers/states';
 import { companiesNamed, type LockableEngagement } from '@/lib/ask/data-router/lock';
-import type { ReadResult } from '@/lib/ask/data-router/types';
+import type { ReadResult, ReadValue } from '@/lib/ask/data-router/types';
 import { normalizeLabel } from '@/lib/ask/field-catalog/rules';
 import { isEmailName } from './email';
 import { COPY_FIELD_BY_DOC, UPLOAD_FIELD_BY_DOC, UPLOAD_FIELDS, type UploadField } from '@/lib/ask/field-catalog/upload-fields';
@@ -59,6 +59,13 @@ export interface FileClassification<E extends LockableEngagement> {
   /** How sure the client is: 1 when the document or a folder names it, lower for weaker hints. */
   confidence: number;
   needs: ClassifyNeed[];
+  /**
+   * The values written inside the document. A file can fill an upload slot and still give the facts
+   * in its text: a board resolution fills the signed-resolution slot and gives the business
+   * description, the proposed names, the directors, the capital and the signatory. These go to the
+   * data router whatever the destination is (see `assemble.ts`).
+   */
+  values: ReadValue[];
 }
 
 const CONFIDENCE: Record<ClientSource, number> = { document: 1, folder: 1, reply: 1, file: 0.9, sibling: 0.8, message: 0.8, page: 0.6, only: 0.6 };
@@ -98,6 +105,7 @@ const VAULT_CATEGORY: Record<string, string> = {
   noc: 'Address proof',
   address_proof: 'Address proof',
   consent_letter: 'Director KYC',
+  incorporation_data: 'Incorporation',
 };
 
 export function vaultCategory(docType: string): string {
@@ -261,6 +269,24 @@ function pickClient<E extends LockableEngagement>(levels: Array<{ source: Client
 
 // ---- The destination --------------------------------------------------------------------------
 
+/**
+ * A board resolution that is still a draft: its names say so, or it is an editable Word file. Its
+ * values count, but it never fills the signed-resolution slot.
+ */
+export function isDraftResolution(input: Pick<ClassifyInput, 'fileName' | 'path'>): boolean {
+  if (/\.(docx?|odt|rtf)$/i.test(input.fileName)) return true;
+  return /(?:^|[^a-z])draft(?:[^a-z]|$)/i.test(`${input.path} ${input.fileName}`);
+}
+
+/**
+ * The values a document gives the data router. A labour sheet has none, and a tax notice's values
+ * are the department's, which never belong on the client's checklist.
+ */
+export function documentValues(read: ReadResult): ReadValue[] {
+  if (read.labourSheet || read.docType === 'tax_notice') return [];
+  return [...read.values];
+}
+
 function destinationOf(input: ClassifyInput): DropDestination {
   const { read } = input;
   if (input.kind === 'paste') return { kind: 'values' };
@@ -276,6 +302,7 @@ function destinationOf(input: ClassifyInput): DropDestination {
   // An email is kept as correspondence: a checklist upload field takes the document itself, and the
   // email's type comes from its attachment, so the .eml would land where the PDF belongs.
   if (isEmailName(input.fileName)) return { kind: 'vault', category: vaultCategory(read.docType) };
+  if (read.docType === 'board_resolution' && isDraftResolution(input)) return { kind: 'vault', category: vaultCategory(read.docType) };
   const byDoc = UPLOAD_FIELD_BY_DOC[read.docType] ?? [];
   if (byDoc.length > 0) return { kind: 'checklist', docType: read.docType, fields: [...byDoc], copy: Boolean(COPY_FIELD_BY_DOC[read.docType]) && byDoc.every((f) => f.group === 'directors') };
   const byLabel = read.docType === 'other' || read.docType === 'form' ? uploadFieldsByLabel(input.fileName) : [];
@@ -301,6 +328,7 @@ export function classifyFile<E extends LockableEngagement>(input: ClassifyInput,
     clientSource: candidates.length === 1 ? source : null,
     confidence: candidates.length === 1 && source ? CONFIDENCE[source] : 0,
     needs,
+    values: destination.kind === 'labour' ? [] : documentValues(input.read),
   };
 }
 

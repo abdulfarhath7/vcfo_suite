@@ -19,7 +19,8 @@ import { isDirectFlowStep, isDirectFlowStepComplete, MANAGER_APPROVAL_STEP_ID } 
 import { stepCompleteness, type CompletenessEngagement } from '@/lib/incorporation/step-completeness';
 import { engagementDbId } from '@/lib/projects/legacy-engagement-ids';
 import { isFillRow, planFill } from './plan';
-import { ASK_FILL_EVENT, FILL_WORKFLOW, type FillMode, type FillRunView, type FillScope, type FillState, type FillStepState } from './types';
+import { ASK_FILL_EVENT, FILL_WORKFLOW, type FillLadder, type FillMode, type FillRunView, type FillScope, type FillState, type FillStepState } from './types';
+import { boardResolutionLine } from './draft-br-decision';
 
 /**
  * "Fill into app" (PLAN K): the card's checklist values saved into every step as drafts, in
@@ -228,7 +229,15 @@ export interface FillSummary {
  * and how many answers the rest still need, the steps left with their reason, and the steps filled
  * before they opened. Names steps and fields, never values.
  */
-export function fillSummary(view: Pick<FillRunView, 'companyName' | 'steps' | 'stopReason' | 'status'>): FillSummary {
+/** What a "fill everything" run adds to the closing message. Labels and counts only. */
+export interface FillSummaryExtra {
+  ladder?: FillLadder;
+  boardResolutionLine?: string;
+  /** Rows where two documents differed and code chose one. */
+  conflicts?: number;
+}
+
+export function fillSummary(view: Pick<FillRunView, 'companyName' | 'steps' | 'stopReason' | 'status'>, extra: FillSummaryExtra = {}): FillSummary {
   const filled = view.steps.filter((s) => s.filled > 0);
   const values = filled.reduce((sum, s) => sum + s.filled, 0);
   const marked = view.steps.filter((s) => s.completeness && s.status !== 'stopped');
@@ -249,20 +258,34 @@ export function fillSummary(view: Pick<FillRunView, 'companyName' | 'steps' | 's
   if (view.stopReason) parts.push(view.stopReason);
   const early = view.steps.filter((s) => s.early && s.filled > 0);
   if (early.length > 0) parts.push(`${plural(early.length, 'step')} ${early.length === 1 ? 'was' : 'were'} filled before ${early.length === 1 ? 'it' : 'they'} opened: check ${early.length === 1 ? 'it' : 'them'} once the earlier steps are final.`);
+  const ladder = extra.ladder;
+  if (ladder) {
+    if (ladder.suggested.length > 0) parts.push(`${plural(ladder.suggested.length, 'answer')} ${ladder.suggested.length === 1 ? 'was' : 'were'} filled as suggested (${firstFew(ladder.suggested.map((g) => g.label))}): check ${ladder.suggested.length === 1 ? 'it' : 'them'}.`);
+    if (ladder.askClient.length > 0) {
+      parts.push(
+        ladder.requestList
+          ? `Only the client can give ${plural(ladder.askClient.length, 'answer')}; I put ${ladder.askClient.length === 1 ? 'it' : 'them'} on one draft Ask-client list, not sent.`
+          : `Only the client can give ${plural(ladder.askClient.length, 'answer')} (${firstFew(ladder.askClient.map((g) => g.label))}).`,
+      );
+    }
+    if (ladder.left.length > 0) parts.push(`Left for the project lead: ${firstFew(ladder.left.map((g) => g.label))}.`);
+  }
+  if (extra.conflicts) parts.push(`Documents differed on ${plural(extra.conflicts, 'answer')}; I used the signed, final or newest one and kept the other as a note on the card.`);
+  if (extra.boardResolutionLine) parts.push(extra.boardResolutionLine);
   if (complete.length > 0) parts.push('Nothing was submitted; submit each step in order, or press Submit ready steps.');
   const needs = incomplete.map((s) => ({ stepId: s.stepId, title: s.title, text: s.completeness!.labels.length > 0 ? `Needs ${firstFew(s.completeness!.labels)}` : `${s.completeness!.missing} to fill` }));
   return { line: parts.join(' ').slice(0, 1200), needs, openStepId: incomplete[0]?.stepId ?? null };
 }
 
 /** The closing line alone, as the chat's text. */
-export function fillSummaryLine(view: Pick<FillRunView, 'companyName' | 'steps' | 'stopReason' | 'status'>): string {
-  const summary = fillSummary(view);
+export function fillSummaryLine(view: Pick<FillRunView, 'companyName' | 'steps' | 'stopReason' | 'status'>, extra: FillSummaryExtra = {}): string {
+  const summary = fillSummary(view, extra);
   if (summary.needs.length === 0) return summary.line;
   return `${summary.line} ${summary.needs.map((n) => `${n.title}: ${n.text}.`).join(' ')}`.slice(0, 1200);
 }
 
-function summaryAnswer(view: FillRunView, run: Pick<AskRunRow, 'id'>, mode: FillMode): AnswerEnvelope {
-  const summary = fillSummary(view);
+function summaryAnswer(view: FillRunView, run: Pick<AskRunRow, 'id'>, mode: FillMode, extra: FillSummaryExtra = {}): AnswerEnvelope {
+  const summary = fillSummary(view, extra);
   const facts = summary.needs.slice(0, 6).map((n) => ({ k: n.title.slice(0, 60), v: n.text.slice(0, 200) }));
   const line = summary.needs.length === 1 ? `${summary.line} ${summary.needs[0]!.title}: ${summary.needs[0]!.text}.`.slice(0, 1200) : summary.line;
   return {
@@ -273,8 +296,29 @@ function summaryAnswer(view: FillRunView, run: Pick<AskRunRow, 'id'>, mode: Fill
     depth: 'normal',
     fill: { runId: run.id, mode },
     ...(facts.length >= 2 ? { visual: { type: 'keyFacts' as const, facts } } : {}),
-    ...(summary.openStepId ? { links: [{ dest: { to: 'projectStep' as const, engagementId: view.engagementId, stepId: summary.openStepId }, label: `Open ${titleOf(summary.openStepId)}`.slice(0, 60), primary: true }] } : {}),
+    ...(() => {
+      const links = summaryLinks(view, summary, extra);
+      return links.length > 0 ? { links } : {};
+    })(),
   };
+}
+
+/**
+ * The closing message's buttons. A plain fill opens the first step still needing answers. A whole
+ * fill offers Review drafts (the first step it filled) and Send Ask-client list (the Requests page,
+ * where the person sends it; nothing is sent from here). Submit ready steps is the fill rail's own
+ * button, which the answer's `fill` brings.
+ */
+function summaryLinks(view: FillRunView, summary: FillSummary, extra: FillSummaryExtra): NonNullable<AnswerEnvelope['links']> {
+  const links: NonNullable<AnswerEnvelope['links']> = [];
+  if (!extra.ladder) {
+    if (summary.openStepId) links.push({ dest: { to: 'projectStep', engagementId: view.engagementId, stepId: summary.openStepId }, label: `Open ${titleOf(summary.openStepId)}`.slice(0, 60), primary: true });
+    return links;
+  }
+  const first = view.steps.find((s) => s.filled > 0)?.stepId ?? summary.openStepId;
+  if (first) links.push({ dest: { to: 'projectStep', engagementId: view.engagementId, stepId: first }, label: 'Review drafts', primary: true });
+  if (extra.ladder.requestList) links.push({ dest: { to: 'list', list: 'requests' }, label: 'Send Ask-client list' });
+  return links;
 }
 
 /**
@@ -286,12 +330,21 @@ async function saveRun(ctx: AuthContext, run: AskRunRow, state: FillState, rows?
   const status = runStatusOf(state);
   const settled = status === 'done' || status === 'stopped';
   const next = { ...state };
+  // A whole fill settles the draft board resolution once: generated in an Auto run (the job), or
+  // what it still needs. Only when the run covered that step.
+  if (settled && next.ladder && next.boardResolutionLine === undefined && (!next.scope || next.scope.stepIds.includes(MANAGER_APPROVAL_STEP_ID))) {
+    const { draftBoardResolutionAfterFill } = await import('./draft-br');
+    next.boardResolutionLine = boardResolutionLine(await draftBoardResolutionAfterFill(ctx, state.engagementId, { generate: next.mode === 'auto' }));
+  }
   if (settled && !next.answerMessageId && run.conversationId) {
     const cardRows = rows ?? (await getAskChangesetForDecision(ctx, state.changesetId).catch(() => null))?.rows ?? [];
     const project = await loadProject(ctx, state.engagementId).catch(() => null);
     const view = buildFillView({ ...run, status }, next, { rows: cardRows }, project);
-    const answer = summaryAnswer(view, run, next.mode);
-    const text = fillSummaryLine(view);
+    const extra: FillSummaryExtra = next.ladder
+      ? { ladder: next.ladder, boardResolutionLine: next.boardResolutionLine, conflicts: cardRows.filter((r) => isFillRow(r) && r.checks.some((c) => c.rule === 'documents_chosen')).length }
+      : {};
+    const answer = summaryAnswer(view, run, next.mode, extra);
+    const text = fillSummaryLine(view, extra);
     const message = await appendAskMessage(ctx, run.conversationId, { sender: 'assistant', text, answer, origin: 'work', path: 'fixed_workflow' });
     if (message) next.answerMessageId = message.id;
   }
@@ -553,10 +606,26 @@ export function fillStartedLine(started: { mode: FillMode; chip?: FillMode; view
 /** Starts a fill on a card. Auto mode queues the job; manual mode waits for the page. */
 export async function startFill(
   ctx: AuthContext,
-  input: { changesetId: string; mode: FillMode; chip?: FillMode; conversationId?: string | null; scope?: FillScope | null },
+  input: {
+    changesetId: string;
+    mode: FillMode;
+    chip?: FillMode;
+    conversationId?: string | null;
+    scope?: FillScope | null;
+    /** A chat fill ("fill everything"): run the gaps ladder first and report it at the end. */
+    everything?: boolean;
+  },
 ): Promise<{ runId: string; mode: FillMode; chip?: FillMode; view: FillRunView }> {
-  const found = await loadCard(ctx, input.changesetId);
+  let found = await loadCard(ctx, input.changesetId);
   const scope = input.scope && input.scope.stepIds.length > 0 ? input.scope : null;
+  let ladder: FillLadder | undefined;
+  // One open run per card: the ladder runs only for a new run, never twice.
+  if (input.everything && !(await findOpenAskFillRun(ctx, found.changeset.id, new Date()))) {
+    const { prepareFillEverything } = await import('./everything');
+    const prepared = await prepareFillEverything(ctx, found, { scope, now: new Date() });
+    ladder = prepared.ladder;
+    if (prepared.addedRows) found = await loadCard(ctx, input.changesetId);
+  }
   const plan = planFill(found.rows, scope?.stepIds);
   if (plan.length === 0) {
     if (scope && planFill(found.rows).length > 0) throw new FillRefused(`This card has no values for ${scope.label}, so nothing was filled. The card keeps its other rows.`, 400);
@@ -582,6 +651,7 @@ export async function startFill(
     current: null,
     steps: plan.map((p) => ({ stepId: p.stepId, status: 'pending' })),
     ...(scope ? { scope } : {}),
+    ...(ladder ? { ladder } : {}),
   };
   const run = await createAskRun(ctx, { conversationId, workflow: FILL_WORKFLOW, goal: `Fill ${found.companyName} (${input.mode})`, budgetTokens: 0, status: 'running', state: asJson(initial) });
   await lockAskRun(ctx, run.id, engagementId);

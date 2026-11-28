@@ -394,9 +394,10 @@ export async function assembleDrop(input: AssembleInput): Promise<AssembleResult
       }
       if (plan.kind === 'copy') copies.add(read.attachment.id);
       placedHere.push({ read, destination: plan.destination });
-      // Every read's values go through the data router; a labour sheet has none, and a tax notice's
-      // values are the department's, which never belong on the client's checklist.
-      if ((read.result.values.length > 0 && read.result.docType !== 'tax_notice') || plan.kind === 'copy') valueReads.push({ result: read.result, attachment: read.attachment });
+      // Every read's values go through the data router, whatever slot the file fills
+      // (`FileClassification.values`): a labour sheet has none, and a tax notice's values are the
+      // department's, which never belong on the client's checklist.
+      if (found.values.length > 0 || plan.kind === 'copy') valueReads.push({ result: read.result, attachment: read.attachment });
     }
     if (placedHere.length === 0) continue;
 
