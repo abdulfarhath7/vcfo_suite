@@ -66,12 +66,14 @@ import {
 } from '@/lib/ask/topics';
 import { validateAnswer, withoutVisual } from '@/lib/ask/validate';
 import { pickAndPrepare } from '@/lib/ask/do/pick-action';
-import { isFillRequest, modeFromText, scopeFromText } from '@/lib/ask/fill/intent';
+import { cardIsFresh, isFillRequest, modeFromText, scopeFromText } from '@/lib/ask/fill/intent';
 import { startFetchThenFill, type FetchThenFillStart } from '@/lib/ask/fill/after-fetch';
 import { gstIntent } from '@/lib/ask/gst/intent';
 import { gstWorkAnswer, type GstWorkAnswer } from '@/lib/ask/gst/answer';
 import { FillRefused, fillStartedLine, startFill } from '@/lib/ask/fill/run';
-import { findOpenFillCardInConversation } from '@/db/repositories/ask-changesets';
+import { findOpenFillCardDetails } from '@/db/repositories/ask-changesets';
+import { listEngagements } from '@/db/repositories/engagements';
+import { companiesNamed } from '@/lib/ask/data-router/lock';
 import { dropContextLine, dropProgressAnswer, isDropProgressQuestion } from '@/lib/ask/drop/progress';
 import { handleDoWork, isDataMessage, pageContext, pendingDoRun, STORED_USER_TEXT_MAX, type DoEvent } from '@/lib/ask/do/entry';
 
@@ -400,23 +402,32 @@ export async function runAskChat(ctx: AuthContext, request: ChatRequest, emit: E
       ...(fill ? { fill } : {}),
       ...(dropRunId ? { runId: dropRunId } : {}),
     });
-    const cardId = await findOpenFillCardInConversation(ctx, conversationId, now);
+    // Every fill reads every source first (the fill-everything build): the client's SharePoint
+    // folder with its sub-folders, the documents in the app and the person's attached files. Only a
+    // recent card in this chat for the same client is filled as it is, because it already holds
+    // that read (`cardIsFresh`).
+    const card = await findOpenFillCardDetails(ctx, conversationId, now);
+    const named = card ? companiesNamed(typed, (await listEngagements(ctx)).map((e) => ({ id: e.id, slug: e.slug ?? null, companyName: e.companyName }))).map((e) => e.id) : [];
+    const cardId = card && cardIsFresh(card, { now, namedEngagementIds: named }) ? card.id : null;
     if (!cardId) {
-      // "Fetch bonterra data and put it in the app": no card yet, so the client's folder is read
-      // first and the drop starts the fill on its card when it is ready (src/lib/ask/fill/after-fetch.ts).
-      const fetched = await startFetchThenFill(ctx, { message: typed, conversationId, pagePath: request.page?.path, mode, chip, scope }).catch((error) => {
+      // No card yet, or an old one: the client's folder is read first and the drop starts the fill
+      // on its card when it is ready (src/lib/ask/fill/after-fetch.ts).
+      const fetched = await startFetchThenFill(ctx, { message: typed, conversationId, pagePath: request.page?.path, mode, chip, scope, implied: true }).catch((error) => {
         console.error('[ask-vcfo] fetch before fill failed', error);
         return { line: 'I could not start the fetch. Nothing was read or filled.' } as FetchThenFillStart;
       });
-      if (fetched) {
+      if (fetched?.runId || (fetched && !card)) {
         await finish(work(fetched.line, undefined, fetched.runId), { path: 'fixed_workflow' });
         return;
       }
-      await finish(work('There is no open card in this chat to fill. Fetch the client folder or paste the details first, then ask me to fill it.'), { path: 'fixed_workflow' });
-      return;
+      if (!card) {
+        await finish(work('There is no open card in this chat to fill. Open the client\'s project or name the client, or paste the details first, then ask me to fill it.'), { path: 'fixed_workflow' });
+        return;
+      }
     }
+    const fillCardId = cardId ?? card!.id;
     try {
-      const started = await startFill(ctx, { changesetId: cardId, mode, chip, conversationId, scope });
+      const started = await startFill(ctx, { changesetId: fillCardId, mode, chip, conversationId, scope });
       await finish(work(fillStartedLine(started, scope), { runId: started.runId, mode: started.mode }), { path: 'fixed_workflow' });
     } catch (error) {
       if (!(error instanceof FillRefused)) console.error('[ask-vcfo] fill from chat failed', error);

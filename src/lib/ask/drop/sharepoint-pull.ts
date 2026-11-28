@@ -6,7 +6,7 @@ import { createAskAttachment, listAskRunAttachments } from '@/db/repositories/as
 import type { AskRunRow } from '@/db/repositories/ask-runs';
 import { listSeenSharepointFiles, recordSharepointFileCopied } from '@/db/repositories/sharepoint-files-seen';
 import { openClientsRoot, projectFolderLink, SharepointRefused } from '@/lib/sharepoint/client-folder';
-import { walkFolder } from '@/lib/sharepoint/folder';
+import { DEFAULT_WALK_LIMITS, walkFolder, WHOLE_FOLDER_LIMITS } from '@/lib/sharepoint/folder';
 import { graphDownload, graphListChildren } from '@/lib/sharepoint/graph';
 import { DROP_MAX_BYTES } from '@/lib/upload-limits';
 import { putObject } from '@/storage/s3';
@@ -63,7 +63,9 @@ export async function pullSharepointFiles(ctx: AuthContext, run: Pick<AskRunRow,
     const before = seen.get(item.id);
     return Boolean(before?.readKey && item.cTag && before.cTag === item.cTag);
   };
-  const walked = await walkFolder((itemId) => graphListChildren(access, driveId, itemId), link.folderId, undefined, isSeen);
+  // A fill reads the whole folder at once; a plain fetch keeps the drop's 50 files.
+  const limits = source.wholeFolder ? WHOLE_FOLDER_LIMITS : DEFAULT_WALK_LIMITS;
+  const walked = await walkFolder((itemId) => graphListChildren(access, driveId, itemId), link.folderId, limits, isSeen);
   const seenNote = walked.alreadySeen > 0
     ? `${walked.alreadySeen} file${walked.alreadySeen === 1 ? ' was' : 's were'} read in an earlier fetch and did not change, so I used what I read then.`
     : undefined;

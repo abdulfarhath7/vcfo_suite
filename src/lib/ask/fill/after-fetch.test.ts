@@ -75,6 +75,19 @@ describe('startFetchThenFill', () => {
     expect(startDrop).not.toHaveBeenCalled();
   });
 
+  it('reads the whole folder of the project on screen for any fill request ("fill everything")', async () => {
+    expect(isFillRequest('fill everything')).toBe(true);
+    const out = await startFetchThenFill(lead, { message: 'fill everything', conversationId: 'conv-1', pagePath: '/app/lead/projects/bonterra', mode: 'auto', scope: null, implied: true });
+    expect(out?.runId).toBe('drop-1');
+    expect(startDrop.mock.calls[0]![1]).toMatchObject({ engagementId: 'eng-b', wholeFolder: true, fillAfter: { mode: 'auto' } });
+  });
+
+  it('reads the client a fill request names, with no fetch words ("fill business description from br" on Bonterra)', async () => {
+    const out = await startFetchThenFill(lead, { message: 'fill bonterra business description from br', conversationId: 'conv-1', mode: 'manual', scope: null, implied: true });
+    expect(out?.runId).toBe('drop-1');
+    expect(startDrop.mock.calls[0]![1]).toMatchObject({ engagementId: 'eng-b' });
+  });
+
   it('says plainly when the folder cannot be fetched', async () => {
     startDrop.mockResolvedValueOnce({ ok: false, message: 'I cannot find a SharePoint folder for Bonterra.' } as never);
     const out = await startFetchThenFill(lead, { message: PROD, conversationId: 'conv-1', mode: 'manual', scope: null });

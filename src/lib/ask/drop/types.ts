@@ -122,6 +122,11 @@ export interface DropSharepointSource {
   appPulled?: boolean;
   /** The client's name, for the messages when there is no folder name. */
   companyName?: string;
+  /**
+   * A fetch that a fill asked for reads the whole folder, every sub-folder included, within the
+   * fetch limits (`FETCH_MAX_FILES`, `FETCH_MAX_BYTES`) instead of the drop's 50 files.
+   */
+  wholeFolder?: boolean;
 }
 
 /** The words for where a fetch reads from: "the SharePoint folder X and the documents in the app". */

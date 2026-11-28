@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_WALK_LIMITS, NOT_A_FILE, TOO_DEEP, TOO_LARGE_FILE, TOO_LARGE_TOTAL, TOO_MANY_FILES, walkFolder } from './folder';
+import { DEFAULT_WALK_LIMITS, NOT_A_FILE, TOO_DEEP, TOO_LARGE_FILE, TOO_LARGE_TOTAL, TOO_MANY_FILES, walkFolder, WHOLE_FOLDER_LIMITS } from './folder';
 import type { DriveItem } from './graph';
 
 const file = (id: string, name: string, size = 100): DriveItem => ({ id, name, size, file: {} });
@@ -55,6 +55,14 @@ describe('walkFolder', () => {
     const total = await walkFolder(tree({ root: [file('a', 'a.pdf', 60), file('b', 'b.pdf', 60)] }), 'root', { ...DEFAULT_WALK_LIMITS, maxTotalBytes: 100 });
     expect(total.files.map((f) => f.name)).toEqual(['a.pdf']);
     expect(total.skipped[0]?.reason).toBe(TOO_LARGE_TOTAL);
+  });
+
+  it('reads the whole folder, sub-folders included, for a fill (past the drop\'s 50 files)', async () => {
+    const many = Array.from({ length: 120 }, (_, i) => file(`f${i}`, `doc-${String(i).padStart(3, '0')}.pdf`));
+    const walked = await walkFolder(tree({ root: [folder('sub', 'Board Resolution'), ...many.slice(0, 60)], sub: many.slice(60) }), 'root', WHOLE_FOLDER_LIMITS);
+    expect(walked.files).toHaveLength(120);
+    expect(walked.skipped).toHaveLength(0);
+    expect(walked.files.some((f) => f.path.startsWith('Board Resolution/'))).toBe(true);
   });
 
   it('stops at the depth limit', async () => {

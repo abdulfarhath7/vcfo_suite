@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asksToFetch, isFillRequest, modeFromText, scopeFromText } from './intent';
+import { asksToFetch, cardIsFresh, isFillRequest, modeFromText, scopeFromText } from './intent';
 
 describe('isFillRequest', () => {
   it.each([
@@ -13,11 +13,29 @@ describe('isFillRequest', () => {
     'fill everything into the tool automatically',
     'fill it automatically',
     'fill it in manually',
+    // Any request that opens with "fill" starts the whole fill, with or without a place.
+    'fill business description from br',
+    'fill everything',
+    'fill bonterra',
+    'fill data',
+    'Please fill Bonterra',
+    'can you fill the directors from the consent letters',
+    'auto fill everything',
+    'fill phase 2',
   ])('reads "%s" as a fill request', (text) => {
     expect(isFillRequest(text)).toBe(true);
   });
 
-  it.each(['how do I fill step 3 in the app?', 'what is the PAN of Bonterra', 'upload the PAN card', 'Name: Bonterra India Pvt Ltd'])('does not read "%s" as a fill request', (text) => {
+  it.each([
+    'how do I fill step 3 in the app?',
+    'how do I fill step 3?',
+    'what is the PAN of Bonterra',
+    'upload the PAN card',
+    'Name: Bonterra India Pvt Ltd',
+    'the client will fill the details tomorrow',
+    'is step 3 filled?',
+    'who fills the NIC code',
+  ])('does not read "%s" as a fill request', (text) => {
     expect(isFillRequest(text)).toBe(false);
   });
 });
@@ -65,5 +83,18 @@ describe('scopeFromText', () => {
   it('is null when no step is named, so every step runs', () => {
     expect(scopeFromText('fill it into the app step by step')).toBeNull();
     expect(scopeFromText('upload the data into vcfo suite tool')).toBeNull();
+  });
+});
+
+describe('cardIsFresh', () => {
+  const now = new Date('2026-11-28T10:00:00Z');
+  const card = { createdAt: new Date('2026-11-28T09:50:00Z'), engagementId: 'eng-1' };
+  it('uses a recent card for the client named, or when no client is named', () => {
+    expect(cardIsFresh(card, { now, namedEngagementIds: [] })).toBe(true);
+    expect(cardIsFresh(card, { now, namedEngagementIds: ['eng-1'] })).toBe(true);
+  });
+  it('reads again for another client or an old card', () => {
+    expect(cardIsFresh(card, { now, namedEngagementIds: ['eng-2'] })).toBe(false);
+    expect(cardIsFresh({ ...card, createdAt: new Date('2026-11-28T08:00:00Z') }, { now, namedEngagementIds: [] })).toBe(false);
   });
 });

@@ -19,7 +19,7 @@ import { docTypeWords } from '@/lib/ask/data-router/targeted';
 import type { ReadResult } from '@/lib/ask/data-router/types';
 import { createRunContext, RUN_OVER_BUDGET_COPY, RunOverBudget } from '@/lib/ask/do/run-context';
 import { maskIdentityNumbers, namesFromLabelledText, type KnownPerson } from '@/lib/ask/mask';
-import { DROP_MAX_BYTES, DROP_MAX_FILES } from '@/lib/upload-limits';
+import { DROP_MAX_BYTES, DROP_MAX_FILES, FETCH_MAX_BYTES, FETCH_MAX_FILES } from '@/lib/upload-limits';
 import { getObjectBuffer, putObject } from '@/storage/s3';
 import { assembleDrop, type DropRead } from './assemble';
 import { dropSummaryLine, NOT_READ_BUDGET } from './summary';
@@ -118,7 +118,7 @@ export async function dropPullStep(runId: string): Promise<{ copied: number; ski
   let app: number | undefined;
   if (readsApp) {
     await updateAskRun(ctx, runId, { state: asJson({ ...state, progress: { done: 0, total: 0, label: APP_COPY_LABEL } }) });
-    const room = Math.max(0, DROP_MAX_FILES - copied);
+    const room = Math.max(0, (source.wholeFolder ? FETCH_MAX_FILES : DROP_MAX_FILES) - copied);
     const result = await pullAppDocuments(ctx, run, source, { room });
     const notes = result.note ? [...(state.notes ?? []), maskIdentityNumbers(result.note)] : state.notes;
     state = { ...state, files: addFiles(result.files), ...(notes ? { notes } : {}), source: { ...(state.source ?? source), appPulled: true } };
@@ -146,6 +146,10 @@ export async function dropUnpackStep(runId: string): Promise<string[] | null> {
   const plain = rows.filter((r) => !r.parentId && !zips.includes(r));
   const used = { files: plain.length, bytes: plain.reduce((sum, r) => sum + r.sizeBytes, 0) };
   const skipped: DropFile[] = [];
+  // A whole-folder fetch for a fill has room for the whole folder; every other drop keeps 50 files.
+  const whole = state.source?.kind === 'sharepoint' && state.source.wholeFolder === true;
+  const maxFiles = whole ? FETCH_MAX_FILES : DROP_MAX_FILES;
+  const maxBytes = whole ? FETCH_MAX_BYTES : DROP_MAX_BYTES;
 
   for (const zip of zips) {
     const children = rows.filter((r) => r.parentId === zip.id);
@@ -157,8 +161,8 @@ export async function dropUnpackStep(runId: string): Promise<string[] | null> {
       if (!bytes) throw new UnzipRefused('That ZIP file is no longer available. Please drop it again.');
       const { entries, skipped: zipSkipped } = unzipDrop(bytes, {
         ...DEFAULT_UNZIP_LIMITS,
-        maxEntries: Math.max(0, DROP_MAX_FILES - used.files),
-        maxTotalBytes: Math.max(0, DROP_MAX_BYTES - used.bytes),
+        maxEntries: Math.max(0, maxFiles - used.files),
+        maxTotalBytes: Math.max(0, maxBytes - used.bytes),
       });
       const done = new Set(children.map((c) => c.relativePath));
       const folder = zipFolder(zip);

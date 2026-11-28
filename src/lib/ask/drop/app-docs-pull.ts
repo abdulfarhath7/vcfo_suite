@@ -94,6 +94,6 @@ export async function pullAppDocuments(
     await recordSharepointFileCopied(ctx, source.engagementId, { itemId, cTag: versionOf(doc), sha256, path: relativePath, attachmentId: attachment.id });
     files.push({ attachmentId: attachment.id, path: relativePath, size, status: 'queued', origin: 'app' });
   }
-  const note = left > 0 ? `${left} more document${left === 1 ? '' : 's'} in the app ${left === 1 ? 'was' : 'were'} left for the next fetch: a fetch reads ${DROP_MAX_FILES} new files.` : undefined;
+  const note = left > 0 ? `${left} more document${left === 1 ? '' : 's'} in the app ${left === 1 ? 'was' : 'were'} left for the next fetch, because this fetch has no room for more new files.` : undefined;
   return { files, reused, ...(note ? { note } : {}) };
 }
