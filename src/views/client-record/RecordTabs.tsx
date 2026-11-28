@@ -7,6 +7,7 @@ import { EngagementNotesPanel } from '@/components/notes/EngagementNotesPanel';
 import { useEngagementNotes } from '@/components/notes/use-engagement-notes';
 import { useApp } from '@/context/AppContext';
 import type { Engagement } from '@/data/engagements';
+import { ComplianceCalendarView } from '@/views/compliances/ComplianceCalendarView';
 import { ObligationsView } from '@/views/compliances/ObligationsView';
 import { RegistrationsView } from '@/views/compliances/RegistrationsView';
 import { useRegister } from '@/views/compliances/use-register';
@@ -20,7 +21,8 @@ import { StaffClientFilings } from '@/components/client-portal/pages/compliances
 /**
  * CLIENT RECORD TABS (G-19, prototype ClientRecordScreen): the staff record of one client
  * switches in place (C-0032) between its incorporation steps (the record's own body, the
- * first tab), Registrations, Obligations, Directors (board meetings), Documents, Team and Notes. Fees stay out (R-37).
+ * first tab), Registrations, Obligations, Calendar, Directors (board meetings), Documents, Team and
+ * Notes. Fees stay out (R-37).
  *
  * Registrations and Obligations are the staff list views from the Compliances module,
  * scoped to this one engagement and embedded, so a filter never leaves the record. Their
@@ -28,6 +30,9 @@ import { StaffClientFilings } from '@/components/client-portal/pages/compliances
  * one engagement; the register (`/api/filings`, `/api/client/compliances`) for
  * obligations. Obligations also offers "Client view", the client's own Filings page for this
  * engagement (`StaffClientFilings`), next to the staff list ("Manage"), as the Vault does.
+ * Calendar is the Compliances calendar (`ComplianceCalendarView`) scoped to this one engagement:
+ * its filings, tasks (board meetings among them) and expiries, with no company picker. Before
+ * incorporation it shows the same "Compliance begins after incorporation" notice.
  * Team is the client's own Team section, read-only (`StaffClientTeam`).
  * Notes are staff-only (`/api/engagements/<id>/notes`).
  *
@@ -35,8 +40,8 @@ import { StaffClientFilings } from '@/components/client-portal/pages/compliances
  * parameter.
  */
 
-export type RecordTabKey = 'overview' | 'registrations' | 'obligations' | 'directors' | 'documents' | 'team' | 'notes';
-const TABS: RecordTabKey[] = ['overview', 'registrations', 'obligations', 'directors', 'documents', 'team', 'notes'];
+export type RecordTabKey = 'overview' | 'registrations' | 'obligations' | 'calendar' | 'directors' | 'documents' | 'team' | 'notes';
+const TABS: RecordTabKey[] = ['overview', 'registrations', 'obligations', 'calendar', 'directors', 'documents', 'team', 'notes'];
 
 export function useRecordTab(): [RecordTabKey, (key: RecordTabKey) => void] {
   const params = useSearchParams();
@@ -91,6 +96,7 @@ export function RecordTabBar({
         { key: 'overview', label: overviewLabel, count: overviewCount },
         { key: 'registrations', label: 'Registrations', count: regCount },
         { key: 'obligations', label: 'Obligations', count: obligationCount || undefined },
+        { key: 'calendar', label: 'Calendar' },
         { key: 'directors', label: 'Directors' },
         { key: 'documents', label: 'Documents', count: docs.data ? docs.data.length : undefined },
         { key: 'team', label: 'Team' },
@@ -112,6 +118,7 @@ export function RecordTabPanel({ tab, engagement, shellBase }: { tab: Exclude<Re
   );
   if (tab === 'registrations') return <RegistrationsView shellBase={shellBase} scope={scope} embedded />;
   if (tab === 'obligations') return <RecordObligations engagement={engagement} shellBase={shellBase} scope={scope} projectHref={pathname} />;
+  if (tab === 'calendar') return <ComplianceCalendarView basePath={`${shellBase}/compliances`} scope={scope} embedded />;
   if (tab === 'directors') return <DirectorsPanel engagementId={engagement.id} compliancesBase={`${shellBase === '/app/super' ? '/app/admin' : shellBase}/compliances`} />;
   if (tab === 'documents') return <RecordDocumentsPanel engagement={engagement} vaultHref={`${shellBase}/vault`} />;
   if (tab === 'team') return <StaffClientTeam engagementId={engagement.id} projectHref={pathname} />;
